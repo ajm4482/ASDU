@@ -1,5 +1,4 @@
 #include "server_https.hpp"
-#include "client_https.hpp"
 
 //Added for the json-example
 #define BOOST_SPIRIT_THREADSAFE
@@ -30,7 +29,6 @@ using namespace std;
 using namespace boost::property_tree;
 
 typedef SimpleWeb::Server<SimpleWeb::HTTPS> HttpsServer;
-typedef SimpleWeb::Client<SimpleWeb::HTTPS> HttpsClient;
 
 void pretty(const char* str, const char* title) {
     printf("%s:\n",title);
@@ -63,7 +61,7 @@ int main() {
     printf("%s\n\n",RASK);
 
     //HTTPS-server at port 8080 using 4 threads
-    HttpsServer server(8080, 4, "server.crt", "server.key");
+    HttpsServer server(8080, 4, "server/server.crt", "server/server.key");
     
     //Add resources using path-regex and method-string, and an anonymous function
     //POST-example for the path /string, responds the posted string
@@ -116,6 +114,11 @@ int main() {
         content_stream.seekp(0, ios::end);
         
         response <<  "HTTP/1.1 200 OK\r\nContent-Length: " << content_stream.tellp() << "\r\n\r\n" << content_stream.rdbuf();
+    };
+
+
+    server.resource["^/key$"]["GET"]=[](HttpsServer::Response& response, shared_ptr<HttpsServer::Request> request) {
+        response << "HTTP/1.1 200 OK\r\nContent-Length: " << (unsigned) strlen(RAVK) << "\r\n\r\n" << RAVK;
     };
     
     //GET-example for the path /match/[number], responds with the matched string in path (number)
@@ -181,30 +184,30 @@ int main() {
         server.start();
     });
     
-    //Wait for server to start so that the client can connect
-    this_thread::sleep_for(chrono::seconds(1));
+    // //Wait for server to start so that the client can connect
+    // this_thread::sleep_for(chrono::seconds(1));
     
-    //Client examples
-    //Second Client() parameter set to false: no certificate verification
-    HttpsClient client("localhost:8080", false);
-    auto r1=client.request("GET", "/match/123");
-    cout << r1->content.rdbuf() << endl;
+    // //Client examples
+    // //Second Client() parameter set to false: no certificate verification
+    // HttpsClient client("localhost:8080", false);
+    // auto r1=client.request("GET", "/match/123");
+    // cout << r1->content.rdbuf() << endl;
 
-    const char* precred = makeCred(uid);
-    string reg1 = registerUserMessage(precred, RAVK);
-    auto r2=client.request("POST", "/register", reg1);
-    stringstream ss;
-    ss << r2->content.rdbuf();
-    string reg2=ss.str();
-    // cout << reg2->content.rdbuf() << endl;
-    const char* cred = registerUserFinal(uid, reg2.c_str(), precred, RAVK);
+    // const char* precred = makeCred(uid);
+    // string reg1 = registerUserMessage(precred, RAVK);
+    // auto r2=client.request("POST", "/register", reg1);
+    // stringstream ss;
+    // ss << r2->content.rdbuf();
+    // string reg2=ss.str();
+    // // cout << reg2->content.rdbuf() << endl;
+    // const char* cred = registerUserFinal(uid, reg2.c_str(), precred, RAVK);
 
-    pretty(cred,"cred");
+    // pretty(cred,"cred");
 
 
     
-    // auto r3=client.request("POST", "/json", json_string);
-    // cout << r3->content.rdbuf() << endl;
+    // // auto r3=client.request("POST", "/json", json_string);
+    // // cout << r3->content.rdbuf() << endl;
     
     server_thread.join();
     

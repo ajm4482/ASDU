@@ -1,5 +1,5 @@
-#include "server_http.hpp"
-#include "client_http.hpp"
+#include "server/server_http.hpp"
+#include "client/client_http.hpp"
 
 //Added for the json-example
 #define BOOST_SPIRIT_THREADSAFE

@@ -43,15 +43,23 @@ if(OPENSSL_FOUND)
     link_directories(../anonize2)
     link_directories(../relic-darwin/lib)
 
-    add_executable(https_examples https_examples.cpp)
-    target_link_libraries(https_examples ${Boost_LIBRARIES})
-    target_link_libraries(https_examples ${OPENSSL_LIBRARIES})
-    target_link_libraries(https_examples ${CMAKE_THREAD_LIBS_INIT})
-
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lc++ -fomit-frame-pointer -DNDEBUG -msse2 -mfpmath=sse -march=native")
 
-    target_link_libraries(https_examples anon)
-    target_link_libraries(https_examples relic_s)
+    add_executable(server_https server/server_https.cpp)
+    target_link_libraries(server_https ${Boost_LIBRARIES})
+    target_link_libraries(server_https ${OPENSSL_LIBRARIES})
+    target_link_libraries(server_https ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(server_https anon)
+    target_link_libraries(server_https relic_s)
+
+    add_executable(client_https client/client_https.cpp)
+    target_link_libraries(client_https ${Boost_LIBRARIES})
+    target_link_libraries(client_https ${OPENSSL_LIBRARIES})
+    target_link_libraries(client_https ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(client_https anon)
+    target_link_libraries(client_https relic_s)
+
+
 endif()
 
 add_executable(http_examples http_examples.cpp)
@@ -60,7 +68,7 @@ target_link_libraries(http_examples ${CMAKE_THREAD_LIBS_INIT})
 
 if(MSYS) #TODO: Is MSYS true when MSVC is true?
     target_link_libraries(http_examples ws2_32 wsock32)
-    target_link_libraries(https_examples ws2_32 wsock32)
+    target_link_libraries(server_https ws2_32 wsock32)
 endif()
 
 enable_testing()
