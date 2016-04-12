@@ -28,8 +28,13 @@ The default_resource includes example use of Server::Response::flush.
 
 * Boost C++ libraries
 * For HTTPS: OpenSSL libraries 
+* [Anonize2](https://gitlab.com/abhvious/anonize2)
 
 ### Compile and run
+
+Anonize should be compiled prior to this.
+When compliling Anonize2, make sure to compile with g++ and replace `-stdlib=libc++` with `-lc++`.
+You may also have to add `#include<chrono>` to anontest.cpp and replace all `#include <string.h>` with `#include <string>`.
 
 Compile with a C++11 compliant compiler:
 ```

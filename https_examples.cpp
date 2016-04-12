@@ -12,6 +12,19 @@
 #include <array>
 #include <algorithm>
 
+#include <fcntl.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
+
+#include <iostream>
+#include <sstream>
+#include <iomanip>
+
+extern "C" {
+#include "anon.h"
+}
+
 using namespace std;
 //Added for the json-example:
 using namespace boost::property_tree;
@@ -19,7 +32,25 @@ using namespace boost::property_tree;
 typedef SimpleWeb::Server<SimpleWeb::HTTPS> HttpsServer;
 typedef SimpleWeb::Client<SimpleWeb::HTTPS> HttpsClient;
 
+void pretty(const char* str, const char* title) {
+    printf("%s:\n",title);
+    const char *p = str;
+    do {
+        const char *l = strchr(p, '\n');
+        if (l) {
+            printf("         %.*s\n", (int)(l-p),p);
+            p = l+1;
+        } else { 
+            printf("         %s\n", p);
+            p = l;
+        }
+    } while (p);
+}
+
 int main() {
+
+    initAnonize();
+    cout<<"initAnonize()"<<endl;
     //HTTPS-server at port 8080 using 4 threads
     HttpsServer server(8080, 4, "server.crt", "server.key");
     

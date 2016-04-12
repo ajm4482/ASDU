@@ -1,6 +1,9 @@
 cmake_minimum_required (VERSION 2.8)
 project (Simple-Web-Server)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -O3 -Wall")
+set(CMAKE_LINKER /usr/bin/g++-5)
+set(CMAKE_CXX_COMPILER /usr/bin/g++-5)
+set(CMAKE_C_COMPILER /usr/bin/gcc-5)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.8)
@@ -32,11 +35,23 @@ find_package(OpenSSL)
 
 if(OPENSSL_FOUND)
     include_directories(${OPENSSL_INCLUDE_DIR})
+    include_directories(../anonize2)
+    include_directories(../relic-darwin/include)
+    include_directories(../relic/include)
+
+
+    link_directories(../anonize2)
+    link_directories(../relic-darwin/lib)
 
     add_executable(https_examples https_examples.cpp)
     target_link_libraries(https_examples ${Boost_LIBRARIES})
     target_link_libraries(https_examples ${OPENSSL_LIBRARIES})
     target_link_libraries(https_examples ${CMAKE_THREAD_LIBS_INIT})
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lc++ -fomit-frame-pointer -DNDEBUG -msse2 -mfpmath=sse -march=native")
+
+    target_link_libraries(https_examples anon)
+    target_link_libraries(https_examples relic_s)
 endif()
 
 add_executable(http_examples http_examples.cpp)
