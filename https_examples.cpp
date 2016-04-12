@@ -14,7 +14,7 @@
 
 #include <fcntl.h>
 #include <unistd.h>
-#include <string.h>
+#include <string>
 #include <stdlib.h>
 
 #include <iostream>
@@ -49,22 +49,35 @@ void pretty(const char* str, const char* title) {
 
 int main() {
 
+   static const char* uid = "abhi@virginia.edu";
+
     initAnonize();
     cout<<"initAnonize()"<<endl;
+
+   static char RAVK[2048], RASK[2048];
+    if (!makeKey(RAVK,RASK)) {
+        fprintf(stderr, "!!!! error making keys.");
+        exit(1);
+    }
+    printf("%s\n\n",RAVK);
+    printf("%s\n\n",RASK);
+
     //HTTPS-server at port 8080 using 4 threads
     HttpsServer server(8080, 4, "server.crt", "server.key");
     
     //Add resources using path-regex and method-string, and an anonymous function
     //POST-example for the path /string, responds the posted string
-    server.resource["^/string$"]["POST"]=[](HttpsServer::Response& response, shared_ptr<HttpsServer::Request> request) {
+    server.resource["^/register$"]["POST"]=[](HttpsServer::Response& response, shared_ptr<HttpsServer::Request> request) {
         //Retrieve string:
-        auto content=request->content.string();
+        string content=request->content.string();
+        const char * reg1 = content.c_str();
+        string reg2 = registerServerResponse(uid, reg1, RASK);
         //request->content.string() is a convenience function for:
         //stringstream ss;
         //ss << request->content.rdbuf();
         //string content=ss.str();
         
-        response << "HTTP/1.1 200 OK\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
+        response << "HTTP/1.1 200 OK\r\nContent-Length: " << reg2.length() << "\r\n\r\n" << reg2;
     };
     
     //POST-example for the path /json, responds firstName+" "+lastName from the posted json
@@ -177,12 +190,21 @@ int main() {
     auto r1=client.request("GET", "/match/123");
     cout << r1->content.rdbuf() << endl;
 
-    string json_string="{\"firstName\": \"John\",\"lastName\": \"Smith\",\"age\": 25}";
-    auto r2=client.request("POST", "/string", json_string);
-    cout << r2->content.rdbuf() << endl;
+    const char* precred = makeCred(uid);
+    string reg1 = registerUserMessage(precred, RAVK);
+    auto r2=client.request("POST", "/register", reg1);
+    stringstream ss;
+    ss << r2->content.rdbuf();
+    string reg2=ss.str();
+    // cout << reg2->content.rdbuf() << endl;
+    const char* cred = registerUserFinal(uid, reg2.c_str(), precred, RAVK);
+
+    pretty(cred,"cred");
+
+
     
-    auto r3=client.request("POST", "/json", json_string);
-    cout << r3->content.rdbuf() << endl;
+    // auto r3=client.request("POST", "/json", json_string);
+    // cout << r3->content.rdbuf() << endl;
     
     server_thread.join();
     
