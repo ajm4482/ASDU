@@ -45,7 +45,16 @@ void pretty(const char* str, const char* title) {
     } while (p);
 }
 
-int main() {
+int main(int argc, char *argv[]) { 
+    string host = "localhost";
+    if(argc == 2){
+        host = argv[1];
+    }
+    else
+    if(argc > 2){
+        cout << "Too many arguments. Format ./client_https <host ip>" << endl;
+        return 1;
+    }
 
     static const char* uid = "abhi@virginia.edu";
 
@@ -54,7 +63,7 @@ int main() {
     
     //Client examples
     //Second Client() parameter set to false: no certificate verification
-    HttpsClient client("localhost:8080", false);
+    HttpsClient client(host+":8080", false);
 
     stringstream ss;
     // auto r1=client.request("GET", "/match/123");
