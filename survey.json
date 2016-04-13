@@ -1,0 +1,20 @@
+{
+	"title": "Monthly Survey",
+	"description": "This survey is for a monthly survey",
+	"data": [{
+		"question": {
+			"type": "small-box",
+			"value": "How many breaches occurred this month?"
+		},
+		"question": {
+			"type": "checkbox",
+			"value": "How would you describe yourself?",
+			"options": [{
+				"value": "Big Company",
+				"value": "Medium Company",
+				"value": "Small Company",
+				"value": "Start up"
+			}]
+		}
+	}]
+}
