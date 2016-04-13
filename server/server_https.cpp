@@ -45,6 +45,28 @@ void pretty(const char* str, const char* title) {
     } while (p);
 }
 
+const char* getUidsig(const char* uid, const char* sigs){
+    const char* s = sigs;
+    do{
+        const char *l = strchr(s, '\n');
+        if(l){
+            if(strncmp(uid,s, strlen(uid)) == 0)
+            {
+                char *ret = new char[(int)(l-s)+1];             
+                strncpy(ret, s, (int)(l-s));
+                ret[(int)(l-s)] = '\0';
+
+                return ret + strlen(uid) + 1;
+            } 
+            s = l+1;
+        } else {
+            s = l;
+        }
+
+    } while(s);
+}
+
+
 int main() {
 
    static const char* uid = "abhi@virginia.edu";
@@ -77,7 +99,7 @@ int main() {
         
         response << "HTTP/1.1 200 OK\r\nContent-Length: " << reg2.length() << "\r\n\r\n" << reg2;
     };
-    
+
     //POST-example for the path /json, responds firstName+" "+lastName from the posted json
     //Responds with an appropriate error message if the posted json is not valid, or if firstName or lastName is missing
     //Example posted json:
@@ -178,6 +200,7 @@ int main() {
         string content="Could not open path "+request->path;
         response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << content.length() << "\r\n\r\n" << content;
     };
+
     
     thread server_thread([&server](){
         //Start server
