@@ -100,8 +100,6 @@ int main() {
         fprintf(stderr, "!!!! error making keys.");
         exit(1);
     }
-    printf("%s\n\n",RAVK);
-    printf("%s\n\n",RASK);
 
     static string auth_uids = "";
 
@@ -122,9 +120,6 @@ int main() {
     //  exit(1);        
     // }
 
-
-    pretty(s.vid,"vid");
-    pretty(s.vavk,"vavk");
 
     //HTTPS-server at port 8080 using 4 threads
     HttpsServer server(8080, 4, "server/server.crt", "server/server.key");
@@ -147,8 +142,6 @@ int main() {
             exit(1);        
         }
 
-        pretty(s.sigs, "sigs");
-
         printf("Registered User: %s\n\n", uid.c_str());
         response << "HTTP/1.1 200 OK\r\nContent-Length: " << (unsigned) strlen(RAVK) << "\r\n\r\n" << RAVK;
 
@@ -164,12 +157,8 @@ int main() {
             string uid = pt.get<string>("uid");
             string reg = pt.get<string>("reg");
 
-            cout << "UID  : " << uid << endl;
-            cout << "Reg2 : " << reg << endl;
-
             string reg2 = registerServerResponse(uid.c_str(), reg.c_str(), RASK);
 
-            pretty(reg2.c_str(), "reg2");
             //request->content.string() is a convenience function for:
             //stringstream ss;
             //ss << request->content.rdbuf();
@@ -179,11 +168,23 @@ int main() {
             
         }
         catch(exception& e) {
-            cout << "/registerServerResponse error" << endl;
+            cout << "registerServerResponse error" << endl;
             response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << strlen(e.what()) << "\r\n\r\n" << e.what();
         }
     };
 
+    server.resource["^/surveyCred$"]["POST"]=[](HttpsServer::Response& response, shared_ptr<HttpsServer::Request> request) {
+        
+        //add uid to list of authorized uids
+        string uid = request->content.string();
+        
+        string uidsig = getUidsig(uid.c_str(), s.sigs);
+
+        string json_string="{\"uidsig\": \"" + uidsig + "\",\"vid\": \"" + s.vid + "\",\"vk\": \"" + s.vavk + "\"}";
+
+        response << "HTTP/1.1 200 OK\r\nContent-Length: " << json_string.length() << "\r\n\r\n" << json_string;
+
+    };
 
     
 
@@ -226,7 +227,7 @@ int main() {
     };
 
 
-    server.resource["^/key$"]["GET"]=[](HttpsServer::Response& response, shared_ptr<HttpsServer::Request> request) {
+    server.resource["^/surveyCred$"]["GET"]=[](HttpsServer::Response& response, shared_ptr<HttpsServer::Request> request) {
         response << "HTTP/1.1 200 OK\r\nContent-Length: " << (unsigned) strlen(RAVK) << "\r\n\r\n" << RAVK;
     };
     
