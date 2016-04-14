@@ -56,40 +56,48 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    static const char* uid = "abhi@virginia.edu";
 
     initAnonize();
     cout<<"initAnonize()"<<endl;
-    
+    string uid;
     //Client examples
     //Second Client() parameter set to false: no certificate verification
     HttpsClient client(host+":8080", false);
+    cout << "Register your UserName: ";
+    cin >> uid;
 
-    stringstream ss;
     // auto r1=client.request("GET", "/match/123");
     // cout << r1->content.rdbuf() << endl;
 
-    auto r1=client.request("GET", "/key");
+
+    stringstream ss;
+    auto r1=client.request("POST", "/registerUser", uid);
     ss << r1->content.rdbuf();
     string RAVK=ss.str();
     cout << RAVK << endl << endl;
-    // cout << r1->content.rdbuf() << endl;
+
+    const char* precred = makeCred(uid.c_str());
+    cout << "after precred" << endl;
+    string reg1 = registerUserMessage(precred, RAVK.c_str());
+    cout << "after reg1" << endl;
 
     stringstream ss2;
-
-    const char* precred = makeCred(uid);
-    string reg1 = registerUserMessage(precred, RAVK.c_str());
-    pretty(reg1.c_str(),"reg1");
-    auto r2=client.request("POST", "/register", reg1);
+    string json_string="{\"uid\": \"" + uid + "\",\"reg\": \"" + reg1 + "\"}";
+    auto r2=client.request("POST", "/registerServerResponse", json_string);
     ss2 << r2->content.rdbuf();
     string reg2=ss2.str();
     // cout << reg2->content.rdbuf() << endl;
-    const char* cred = registerUserFinal(uid, reg2.c_str(), precred, RAVK.c_str());
 
-    pretty(cred,"cred");
+    cout << "UID  : " << uid << endl;
+    cout << "REG2 : " << reg2 << endl;
 
+    // pretty(uid.c_str(), "uid");
+    // pretty(reg2.c_str(), "reg2");
+    // pretty(RAVK.c_str(), "RAVK");
 
+    const char* cred = registerUserFinal(uid.c_str(), reg2.c_str(), precred, RAVK.c_str());
     
+    pretty(cred, "cread");
     // auto r3=client.request("POST", "/json", json_string);
     // cout << r3->content.rdbuf() << endl;
 
