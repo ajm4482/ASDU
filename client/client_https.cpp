@@ -64,8 +64,7 @@ int main(int argc, char *argv[]) {
     //Second Client() parameter set to false: no certificate verification
     HttpsClient client(host+":8080", false);
     cout << "Register your UserName: ";
-    cin >> uid;
-
+    getline(cin, uid);
     // auto r1=client.request("GET", "/match/123");
     // cout << r1->content.rdbuf() << endl;
 
@@ -88,23 +87,31 @@ int main(int argc, char *argv[]) {
 
     auto cred_json =client.request("POST", "/surveyCred", uid);
 
-    try {
-        ptree pt;
-        read_json(cred_json->content, pt);
 
-        string uidsig = pt.get<string>("uidsig");
-        string vid = pt.get<string>("vid");
-        string vk = pt.get<string>("vk");
+    ptree pt;
+    read_json(cred_json->content, pt);
 
-        cout << "uidsig: " <<uidsig << endl;     
-        cout << "vid: " <<vid << endl;
-        cout << "vavk: " <<vk << endl;
-    }
-    catch(exception& e) {
-        cout << "UserID is not authorized to take survey" << endl;
-    }
+    string uidsig = pt.get<string>("uidsig");
+    string vid = pt.get<string>("vid");
+    string vk = pt.get<string>("vk");
 
+    cout << "uidsig: " << uidsig << endl;
+    cout << "vid   : " << vid << endl;
+    cout << "vk    : " << vk << endl;
 
-    
+    string msg, finalmsg;
+
+    cout << "Enter message: ";
+    getline(cin, msg);
+
+    msg = "[\"" + msg + "\"]";
+
+    printf("\nMSG: %s\n\n", msg.c_str());
+
+    finalmsg = submitMessage(msg.c_str(), cred, RAVK.c_str(), uidsig.c_str(), vid.c_str(), vk.c_str());
+    auto submit_response =client.request("POST", "/submit", finalmsg);
+
+    cout << "Submit Response : " << submit_response->content.rdbuf() << endl;
+
     return 0;
 }

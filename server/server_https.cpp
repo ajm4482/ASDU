@@ -45,25 +45,17 @@ void pretty(const char* str, const char* title) {
     } while (p);
 }
 
-const char* getUidsig(const char* uid, const char* sigs){
-    const char* s = sigs;
-    do{
-        const char *l = strchr(s, '\n');
-        if(l){
-            if(strncmp(uid,s, strlen(uid)) == 0)
-            {
-                char *ret = new char[(int)(l-s)+1];             
-                strncpy(ret, s, (int)(l-s));
-                ret[(int)(l-s)] = '\0';
+const char* getUidsig(const char* u, const char* s){
+    string sigs = s;
+    string uid = u;
 
-                return ret + strlen(uid) + 1;
-            } 
-            s = l+1;
-        } else {
-            s = l;
-        }
-
-    } while(s);
+    while(!sigs.empty()){
+        string uidsig = sigs.substr(0, sigs.find(','));
+        if(uidsig == uid)
+            return sigs.substr(sigs.find(',', sigs.find('\n'))).c_str();
+        else 
+            sigs = sigs.substr(sigs.find('\n'));
+    }
 
     return NULL;
 }
@@ -139,7 +131,6 @@ int main() {
             string  err = "There was a problem extending the server to your UID";
             response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << err.length() << "\r\n\r\n" << err;
             fprintf(stderr, "UID: %s  !!!! ERROR extending Survey!\n", uid.c_str());
-            exit(1);        
         }
 
         printf("Registered User: %s\n\n", uid.c_str());
@@ -180,9 +171,33 @@ int main() {
         
         string uidsig = getUidsig(uid.c_str(), s.sigs);
 
+        cout << uid << " SIG: " << uidsig << endl;
+
         string json_string="{\"uidsig\": \"" + uidsig + "\",\"vid\": \"" + s.vid + "\",\"vk\": \"" + s.vavk + "\"}";
 
         response << "HTTP/1.1 200 OK\r\nContent-Length: " << json_string.length() << "\r\n\r\n" << json_string;
+
+    };
+
+    server.resource["^/submit$"]["POST"]=[](HttpsServer::Response& response, shared_ptr<HttpsServer::Request> request) {
+        
+        //add uid to list of authorized uids
+        string msg = request->content.string();
+        
+        survey_response sr;
+        string result;
+        int r = verifyMessage(msg.c_str(), RAVK, s.vid, s.vavk, &sr);
+        if (!r) {
+            result = "\n\nMessage failed to Verify\n\n";
+            cout << result << endl;
+        } else {
+            result = "\n\nSuccessful verification\n\n";
+            printf(" === SUCCEED ===\n");
+        }
+
+        cout << sr.token <<": " << sr.msg << endl;
+
+        response << "HTTP/1.1 200 OK\r\nContent-Length: " << result.length() << "\r\n\r\n" << result;
 
     };
 
