@@ -64,12 +64,33 @@ const char* getUidsig(const char* uid, const char* sigs){
         }
 
     } while(s);
+
+    return NULL;
+}
+
+int verifyUID(const char* uid, const char *authorized){
+    const char* auth = authorized;
+    do{
+        const char *l = strchr(auth, '\n');
+        if(l){
+            if(strncmp(uid,auth, strlen(uid)) == 0)
+                return 1; 
+
+            auth = l+1;
+        } else {
+            if(strncmp(uid,auth, strlen(uid)) == 0)
+                return 1;
+
+            auth = l;
+        }
+
+    } while(auth);
+
+    return 0;
 }
 
 
 int main() {
-
-   static const char* uid = "abhi@virginia.edu";
 
     initAnonize();
     cout<<"initAnonize()"<<endl;
@@ -82,23 +103,89 @@ int main() {
     printf("%s\n\n",RAVK);
     printf("%s\n\n",RASK);
 
+    static string auth_uids = "";
+
+
+    // const char* emails2 = "efwefwe\nbdfsdfwew\nalfwew2ice\nAn2ita\nsdfsDfsdf\nedfsdfwewwueh";
+    static survey s;
+
+
+    printf(" ******************************************** \n\n");
+
+    if (createSurvey(&s) != 1) {
+        fprintf(stderr, "!!!! ERROR CREATING Survey!\n");
+        exit(1);        
+    } 
+
+    // if (extendSurvey(emails2, &s) != 6) {
+    //  fprintf(stderr, "!!!! ERROR extending Survey!\n");
+    //  exit(1);        
+    // }
+
+
+    pretty(s.vid,"vid");
+    pretty(s.vavk,"vavk");
+
     //HTTPS-server at port 8080 using 4 threads
     HttpsServer server(8080, 4, "server/server.crt", "server/server.key");
     
     //Add resources using path-regex and method-string, and an anonymous function
     //POST-example for the path /string, responds the posted string
-    server.resource["^/register$"]["POST"]=[](HttpsServer::Response& response, shared_ptr<HttpsServer::Request> request) {
-        //Retrieve string:
-        string content=request->content.string();
-        const char * reg1 = content.c_str();
-        string reg2 = registerServerResponse(uid, reg1, RASK);
-        //request->content.string() is a convenience function for:
-        //stringstream ss;
-        //ss << request->content.rdbuf();
-        //string content=ss.str();
+
+    server.resource["^/registerUser$"]["POST"]=[](HttpsServer::Response& response, shared_ptr<HttpsServer::Request> request) {
         
-        response << "HTTP/1.1 200 OK\r\nContent-Length: " << reg2.length() << "\r\n\r\n" << reg2;
+        //add uid to list of authorized uids
+        string uid = request->content.string();
+        auth_uids+=uid;
+        //delimited by new lines
+        //auth_uids+="";
+
+        if (extendSurvey(uid.c_str(), &s) != 1) {
+            string  err = "There was a problem extending the server to your UID";
+            response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << err.length() << "\r\n\r\n" << err;
+            fprintf(stderr, "UID: %s  !!!! ERROR extending Survey!\n", uid.c_str());
+            exit(1);        
+        }
+
+        pretty(s.sigs, "sigs");
+
+        printf("Registered User: %s\n\n", uid.c_str());
+        response << "HTTP/1.1 200 OK\r\nContent-Length: " << (unsigned) strlen(RAVK) << "\r\n\r\n" << RAVK;
+
     };
+
+
+    server.resource["^/registerServerResponse$"]["POST"]=[](HttpsServer::Response& response, shared_ptr<HttpsServer::Request> request) {
+        //Retrieve string:
+        try {
+            ptree pt;
+            read_json(request->content, pt);
+
+            string uid = pt.get<string>("uid");
+            string reg = pt.get<string>("reg");
+
+            cout << "UID  : " << uid << endl;
+            cout << "Reg2 : " << reg << endl;
+
+            string reg2 = registerServerResponse(uid.c_str(), reg.c_str(), RASK);
+
+            pretty(reg2.c_str(), "reg2");
+            //request->content.string() is a convenience function for:
+            //stringstream ss;
+            //ss << request->content.rdbuf();
+            //string content=ss.str();
+            
+            response << "HTTP/1.1 200 OK\r\nContent-Length: " << reg2.length() << "\r\n\r\n" << reg2;
+            
+        }
+        catch(exception& e) {
+            cout << "/registerServerResponse error" << endl;
+            response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << strlen(e.what()) << "\r\n\r\n" << e.what();
+        }
+    };
+
+
+    
 
     //POST-example for the path /json, responds firstName+" "+lastName from the posted json
     //Responds with an appropriate error message if the posted json is not valid, or if firstName or lastName is missing
