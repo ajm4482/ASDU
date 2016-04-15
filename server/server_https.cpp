@@ -190,7 +190,7 @@ int main() {
     };
 
     server.resource["^/submit$"]["POST"]=[](HttpsServer::Response& response, shared_ptr<HttpsServer::Request> request) {
-        
+        cout << "submite called" << endl;
         //add uid to list of authorized uids
         string msg = request->content.string();
         
@@ -206,6 +206,7 @@ int main() {
         }
 
         cout << sr.token <<": " << sr.msg << endl;
+        freeSurveyResponse(&sr);
 
         response << "HTTP/1.1 200 OK\r\nContent-Length: " << result.length() << "\r\n\r\n" << result;
 

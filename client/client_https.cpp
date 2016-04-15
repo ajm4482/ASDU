@@ -104,14 +104,20 @@ int main(int argc, char *argv[]) {
     cout << "Enter message: ";
     getline(cin, msg);
 
-    msg = "[\"" + msg + "\"]";
-
-    printf("\nMSG: %s\n\n", msg.c_str());
-
+    cout << "here" << endl;
     finalmsg = submitMessage(msg.c_str(), cred, RAVK.c_str(), uidsig.c_str(), vid.c_str(), vk.c_str());
-    auto submit_response =client.request("POST", "/submit", finalmsg);
+    cout << "finalmsg: " << finalmsg << endl;
+    cout << "here2" << endl;
+    if(!finalmsg.empty()){
+        cout << "here2.5" << endl;
+        auto submit_response =client.request("POST", "/submit", finalmsg);
+        cout << "here3" << endl;
+        cout << "Submit Response : " << submit_response->content.rdbuf() << endl;
+    }
+    else
+        cout << "submitMessage() error" << endl;
 
-    cout << "Submit Response : " << submit_response->content.rdbuf() << endl;
+    
 
     return 0;
 }
