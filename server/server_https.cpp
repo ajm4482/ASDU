@@ -45,17 +45,27 @@ void pretty(const char* str, const char* title) {
     } while (p);
 }
 
-const char* getUidsig(const char* u, const char* s){
-    string sigs = s;
-    string uid = u;
+const char* getUidsig(const char* uid, const char* sigs){
+    const char* s = sigs;
+    do{
+        const char *l = strchr(s, '\n');
+        if(l){
+            if(strncmp(uid,s, strlen(uid)) == 0)
+            {
+                if((int)(strchr(s, ',')-s) == strlen(uid)){
+                    char *ret = new char[(int)(l-s)+1];             
+                    strncpy(ret, s, (int)(l-s));
+                    ret[(int)(l-s)] = '\0';
 
-    while(!sigs.empty()){
-        string uidsig = sigs.substr(0, sigs.find(','));
-        if(uidsig == uid)
-            return sigs.substr(sigs.find(',', sigs.find('\n'))).c_str();
-        else 
-            sigs = sigs.substr(sigs.find('\n'));
-    }
+                    return ret + strlen(uid) + 1;
+                }
+            } 
+            s = l+1;
+        } else {
+            s = l;
+        }
+
+    } while(s);
 
     return NULL;
 }
