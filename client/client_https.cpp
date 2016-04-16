@@ -102,7 +102,8 @@ int main(int argc, char *argv[]) {
     string msg, finalmsg;
 
     cout << "Enter message: ";
-    getline(cin, msg);
+    // getline(cin, msg);
+    cin >> msg;
 
     cout << "here" << endl;
     finalmsg = submitMessage(msg.c_str(), cred, RAVK.c_str(), uidsig.c_str(), vid.c_str(), vk.c_str());
