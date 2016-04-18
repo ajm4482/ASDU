@@ -4,6 +4,7 @@
 #define BOOST_SPIRIT_THREADSAFE
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/algorithm/string/replace.hpp>
 
 //Added for the default_resource example
 #include <fstream>
@@ -193,6 +194,9 @@ int main() {
         cout << "submite called" << endl;
         //add uid to list of authorized uids
         string msg = request->content.string();
+
+        boost::replace_all(msg, "~", "\n");
+
         
         survey_response sr;
         string result;
