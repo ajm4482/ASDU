@@ -64,25 +64,19 @@ namespace SimpleWeb {
                 write_stream << "Content-Length: " << content.size() << "\r\n";
             write_stream << "\r\n";
 
-            std::string msg = "\noutside";
-            
+          
              try {
-                msg = "\nbefore connect";
                 connect();
-                msg = "\nbefore write1";                
                 boost::asio::write(*socket, write_buffer);
-                msg = "\nbefore conditional write";
                 if(content.size()>0)
                 {
-                    msg = "\ninside conditional before";
                     boost::asio::write(*socket, boost::asio::buffer(content.data(), content.size()));
-                    msg = "\ninside conditional after";
                 }
                 
             }
             catch(const std::exception& e) {
                 socket_error=true;
-                throw std::invalid_argument(e.what() + msg);
+                throw std::invalid_argument(e.what());
             }
             
             return request_read();
@@ -111,18 +105,14 @@ namespace SimpleWeb {
             write_stream << "\r\n";
             if(content_length>0)
                 write_stream << content.rdbuf();
-            std::string where = "outside";
             
             try {
-
-                where = "inside, before connect";
                 connect();
-                where = "\ninside, after connect";
                 boost::asio::write(*socket, write_buffer);
             }
             catch(const std::exception& e) {
                 socket_error=true;
-                throw std::invalid_argument(e.what() + where);
+                throw std::invalid_argument(e.what());
             }
             
             return request_read();
