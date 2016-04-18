@@ -125,7 +125,7 @@ int main(int argc, char *argv[]) {
         msg = msg + "\"" + answer + "\",";
     }
 
-    msg[msg.length()-1] = ' ';
+    msg.erase(msg.size() - 1);
     msg+="]";
 
     cout << "\nmsg : " << msg << endl;
@@ -137,8 +137,9 @@ int main(int argc, char *argv[]) {
 
     cout << "finalmessage: \n" << finalmsg << endl;
 
-    cout << "\n\nlength: " << finalmsg.length() << endl;
     cout << "size: " << finalmsg.size() << endl;
+
+    
 
     auto submit_response =client.request("POST", "/submit", finalmsg);
     cout << "Submit Response : " << submit_response->content.rdbuf() << endl;
