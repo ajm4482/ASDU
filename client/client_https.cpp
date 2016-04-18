@@ -4,6 +4,8 @@
 #define BOOST_SPIRIT_THREADSAFE
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/json_parser.hpp>
+#include <boost/algorithm/string/replace.hpp>
+
 
 //Added for the default_resource example
 #include <fstream>
@@ -64,7 +66,8 @@ int main(int argc, char *argv[]) {
     //Second Client() parameter set to false: no certificate verification
     HttpsClient client(host+":8080", false);
     cout << "Register your UserName: ";
-    getline(cin, uid);
+    // cin >> uid;
+    cin >> uid;
     // auto r1=client.request("GET", "/match/123");
     // cout << r1->content.rdbuf() << endl;
 
@@ -102,23 +105,22 @@ int main(int argc, char *argv[]) {
     string msg, finalmsg;
 
     cout << "Enter message: ";
-    // getline(cin, msg);
-    cin >> msg;
+    cin.ignore();
+    getline(cin, msg);
 
-    cout << "here" << endl;
+
+    // msg = "reeaeeeeeeeeeeeeeeeeeeeeeeeeeeeallylongmessagethatwillbelong";
+
     finalmsg = submitMessage(msg.c_str(), cred, RAVK.c_str(), uidsig.c_str(), vid.c_str(), vk.c_str());
-    cout << "finalmsg: " << finalmsg << endl;
-    cout << "here2" << endl;
-    if(!finalmsg.empty()){
-        cout << "here2.5" << endl;
-        auto submit_response =client.request("POST", "/submit", finalmsg);
-        cout << "here3" << endl;
-        cout << "Submit Response : " << submit_response->content.rdbuf() << endl;
-    }
-    else
-        cout << "submitMessage() error" << endl;
+    boost::replace_all(finalmsg, "\n", "~");
 
-    
+    cout << "finalmessage: \n" << finalmsg << endl;
+
+    cout << "\n\nlength: " << finalmsg.length() << endl;
+    cout << "size: " << finalmsg.size() << endl;
+
+    auto submit_response =client.request("POST", "/submit", finalmsg);
+    cout << "Submit Response : " << submit_response->content.rdbuf() << endl;
 
     return 0;
 }
