@@ -18,6 +18,7 @@
 #include <stdlib.h>
 
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <iomanip>
 
@@ -92,6 +93,24 @@ int verifyUID(const char* uid, const char *authorized){
     return 0;
 }
 
+string getQuestions(){
+    ifstream infile;
+    infile.open("server/q.dat");
+    string question, json_string = "{\"questions\" : [";
+
+    while(!infile.eof()){
+        getline(infile, question);
+        json_string = json_string + "\"" + question + "\"";
+        if (infile.peek()!=EOF)
+            json_string = json_string + ","; 
+    }
+
+    infile.ignore();
+
+    json_string = json_string + "]}";
+
+    return json_string;
+}
 
 int main() {
 
@@ -109,8 +128,7 @@ int main() {
 
     // const char* emails2 = "efwefwe\nbdfsdfwew\nalfwew2ice\nAn2ita\nsdfsDfsdf\nedfsdfwewwueh";
     static survey s;
-
-
+    
     printf(" ******************************************** \n\n");
 
     if (createSurvey(&s) != 1) {
@@ -213,6 +231,14 @@ int main() {
         freeSurveyResponse(&sr);
 
         response << "HTTP/1.1 200 OK\r\nContent-Length: " << result.length() << "\r\n\r\n" << result;
+
+    };
+
+    server.resource["^/survey$"]["GET"]=[](HttpsServer::Response& response, shared_ptr<HttpsServer::Request> request) {
+
+        string json_string = getQuestions();
+
+        response << "HTTP/1.1 200 OK\r\nContent-Length: " << json_string.length() << "\r\n\r\n" << json_string;
 
     };
 
