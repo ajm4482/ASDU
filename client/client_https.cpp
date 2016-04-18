@@ -47,6 +47,15 @@ void pretty(const char* str, const char* title) {
     } while (p);
 }
 
+template <typename T>
+std::vector<T> as_vector(ptree const& pt, ptree::key_type const& key)
+{
+    std::vector<T> r;
+    for (auto& item : pt.get_child(key))
+        r.push_back(item.second.get_value<T>());
+    return r;
+}
+
 int main(int argc, char *argv[]) { 
     string host = "localhost";
     if(argc == 2){
@@ -103,6 +112,14 @@ int main(int argc, char *argv[]) {
     cout << "vk    : " << vk << endl;
 
     string msg, finalmsg;
+
+    auto survey_json =client.request("GET", "/survey");
+    ptree survey;
+    read_json(survey_json->content, survey);
+
+    for (auto i : as_vector<string>(survey, "questions")) {
+        cout << i << "\n";
+    }
 
     cout << "Enter message: ";
     cin.ignore();
