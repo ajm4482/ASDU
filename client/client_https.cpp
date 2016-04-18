@@ -111,20 +111,24 @@ int main(int argc, char *argv[]) {
     cout << "vid   : " << vid << endl;
     cout << "vk    : " << vk << endl;
 
-    string msg, finalmsg;
+    string msg = "[", finalmsg;
 
     auto survey_json =client.request("GET", "/survey");
     ptree survey;
     read_json(survey_json->content, survey);
 
+    string answer;
+    cin.ignore();
     for (auto i : as_vector<string>(survey, "questions")) {
         cout << i << "\n";
+        getline(cin, answer);
+        msg = msg + "\"" + answer + "\",";
     }
 
-    cout << "Enter message: ";
-    cin.ignore();
-    getline(cin, msg);
+    msg[msg.length()-1] = ' ';
+    msg+="]";
 
+    cout << "\nmsg : " << msg << endl;
 
     // msg = "reeaeeeeeeeeeeeeeeeeeeeeeeeeeeeallylongmessagethatwillbelong";
 
