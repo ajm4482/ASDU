@@ -131,6 +131,7 @@ int main() {
    char *sql;
 
    bool init = false;
+   bool vinit = false;
 
    /* Open database */
    rc = sqlite3_open("RA.db", &db);
@@ -145,9 +146,8 @@ int main() {
    sql = "CREATE TABLE CLIENTS("  \
          "UID CHAR(30) PRIMARY KEY     NOT NULL," \
          "REQUESTED INT," \
-         "SIG CHAR(1000)," \
-         "VAVK CHAR(1000)," \
-         "VID CHAR(1000));";
+         "SIG CHAR(1024)," \
+         "SID INT);";
 
    /* Execute SQL statement */
    rc = sqlite3_exec(db, sql, callback, 0, &zErrMsg);
@@ -176,8 +176,8 @@ int main() {
 
    sql = "CREATE TABLE RA("  \
          "ID INT PRIMARY KEY NOT NULL," \
-         "RAVK CHAR(1000) NOT NULL," \
-         "RASK CHAR(1000) NOT NULL);";
+         "RAVK CHAR(2048) NOT NULL," \
+         "RASK CHAR(2048) NOT NULL);";
          
    /* Execute SQL statement */
    rc = sqlite3_exec(db, sql, callback, 0, &zErrMsg);
@@ -189,6 +189,26 @@ int main() {
    }else{
       fprintf(stdout, "RA Table created successfully\n");
    }
+
+    sql = "CREATE TABLE VA("  \
+         "ID INT PRIMARY KEY NOT NULL," \
+         "VID CHAR(1024) NOT NULL," \
+         "VAVK CHAR(2048) NOT NULL," \
+         "VASK CHAR(2048) NOT NULL," \
+         "COUNT INT NOT NULL);";
+         
+   /* Execute SQL statement */
+   rc = sqlite3_exec(db, sql, callback, 0, &zErrMsg);
+   if( rc != SQLITE_OK ){
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        if(strcmp(zErrMsg,"table VA already exists "))
+            vinit = true;
+        sqlite3_free(zErrMsg);
+   }else{
+      fprintf(stdout, "VA Table created successfully\n");
+   }
+
+
 
     initAnonize();
     cout<<"initAnonize()"<<endl;
@@ -233,10 +253,38 @@ int main() {
     
     printf(" ******************************************** \n\n");
 
-    if (createSurvey(&s) != 1) {
-        fprintf(stderr, "!!!! ERROR CREATING Survey!\n");
-        exit(1);        
-    } 
+    if(!vinit){
+        if (createSurvey(&s) != 1) {
+            fprintf(stderr, "!!!! ERROR CREATING Survey!\n");
+            exit(1);        
+        } 
+
+        //pretty(s.sigs,"SIGS");
+
+       string in = "INSERT INTO VA (ID,VID,VAVK,VASK,COUNT) " \
+                    "VALUES (1, \'" + string(s.vid) + "\', \'" + string(s.vavk) + "\', \'" + string(s.vask) + "\', "+ to_string(s.cnt) + ");";
+       rc = sqlite3_exec(db, in.c_str(), callback, 0, &zErrMsg);
+       if( rc != SQLITE_OK ){
+          fprintf(stderr, "SQL error: %s\n", zErrMsg);
+          sqlite3_free(zErrMsg);
+       }else{
+          fprintf(stdout, "Survey saved successfully\n");
+       }
+
+    } else{
+
+        sqlite3_stmt * stmt;
+        sqlite3_prepare_v2( db, "SELECT * from VA WHERE ID =1;", -1, &stmt, NULL );
+        sqlite3_step(stmt);
+        s.vid = (char *)sqlite3_column_text( stmt, 1 );
+        s.vavk = (char *)sqlite3_column_text( stmt, 2 );
+        s.vask = (char *)sqlite3_column_text( stmt, 3 );
+        s.cnt = sqlite3_column_int( stmt, 4 );
+
+        pretty(s.vavk,"VAVK");
+        pretty(s.vask,"VASK");
+        sqlite3_finalize(stmt);
+    }
 
     // if (extendSurvey(emails2, &s) != 6) {
     //  fprintf(stderr, "!!!! ERROR extending Survey!\n");
@@ -259,7 +307,7 @@ int main() {
         //auth_uids+="";
 
         if (extendSurvey(uid.c_str(), &s) != 1) {
-            string  err = "There was a problem extending the server to your UID";
+            string  err = "There was a problem extending the survey to your UID";
             response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << err.length() << "\r\n\r\n" << err;
             fprintf(stderr, "UID: %s  !!!! ERROR extending Survey!\n", uid.c_str());
         }
