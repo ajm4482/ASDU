@@ -9,7 +9,7 @@ install_manifest.txt
 #Additions to https://github.com/github/gitignore/blob/master/CMake.gitignore
 Testing
 compile_commands.json
-
+RA.db
 # executables
 http_examples
 client_https
