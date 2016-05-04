@@ -257,7 +257,7 @@ int main() {
         if (createSurvey(&s) != 1) {
             fprintf(stderr, "!!!! ERROR CREATING Survey!\n");
             exit(1);        
-        } 
+        }
 
         //pretty(s.sigs,"SIGS");
 
@@ -276,15 +276,25 @@ int main() {
         sqlite3_stmt * stmt;
         sqlite3_prepare_v2( db, "SELECT * from VA WHERE ID =1;", -1, &stmt, NULL );
         sqlite3_step(stmt);
-        s.vid = (char *)sqlite3_column_text( stmt, 1 );
-        s.vavk = (char *)sqlite3_column_text( stmt, 2 );
-        s.vask = (char *)sqlite3_column_text( stmt, 3 );
-        s.cnt = sqlite3_column_int( stmt, 4 );
 
-        pretty(s.vavk,"VAVK");
-        pretty(s.vask,"VASK");
+        static string vid((char *)sqlite3_column_text( stmt, 1 ));
+        static string vk((char *)sqlite3_column_text( stmt, 2 ));
+        static string sk((char *)sqlite3_column_text( stmt, 3 ));
+
+        s.vid = vid.c_str();
+        s.vavk = vk.c_str();
+        s.vask = sk.c_str();
+
+        s.cnt = sqlite3_column_int( stmt, 4 );
+        s.sigs = NULL;
         sqlite3_finalize(stmt);
     }
+
+        pretty(s.vavk,"VAVK1");
+        pretty(s.vask,"VASK1");
+        pretty(s.vid, "VID1");
+        cout <<"CNT1: "<< s.cnt <<endl;
+        //pretty(s.sigs, "SIGS1");
 
     // if (extendSurvey(emails2, &s) != 6) {
     //  fprintf(stderr, "!!!! ERROR extending Survey!\n");
@@ -303,18 +313,58 @@ int main() {
         //add uid to list of authorized uids
         string uid = request->content.string();
         auth_uids+=uid;
+
+        sqlite3_stmt * stmt;
+        string sql = "SELECT COUNT(*),REQUESTED from CLIENTS WHERE UID=\'" + uid +"\';";
+        sqlite3_prepare_v2( db, sql.c_str(), -1, &stmt, NULL );
+        sqlite3_step(stmt);
+        int client = sqlite3_column_int(stmt, 0);
+        int req = sqlite3_column_int(stmt, 1);
+        sqlite3_finalize(stmt);
+
+        cout << "uid: " << uid << endl<<"req: " << req << endl<<"client: " << client << endl;
+
+
+
+        if(client != 0){
+            if(req == 0){
+                if (extendSurvey(uid.c_str(), &s) != 1) {
+
+                    string  err = "There was a problem extending the survey to your UID";
+                    response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << err.length() << "\r\n\r\n" << err;
+                    fprintf(stderr, "UID: %s  !!!! ERROR extending Survey!\n", uid.c_str());
+                }
+
+                cout <<"sigs: "<< s.sigs << endl;
+                
+                char *zErrMsg = 0;
+                int  rc;
+               string in = "UPDATE CLIENTS SET SIG= \'" + string(getUidsig(uid.c_str(), s.sigs)) + "\', REQUESTED="+ to_string(++req) +" WHERE UID=\'" +uid+"\' AND SID=1;";
+               rc = sqlite3_exec(db, in.c_str(), callback, 0, &zErrMsg);
+               if( rc != SQLITE_OK ){
+                  fprintf(stderr, "SQL error: %s\n", zErrMsg);
+                  sqlite3_free(zErrMsg);
+               }else{
+                  fprintf(stdout, "SIG updated successfully\n");
+               }
+               printf("Registered User: %s\n\n", uid.c_str());
+               response << "HTTP/1.1 200 OK\r\nContent-Length: " << (unsigned) strlen(RAVK) << "\r\n\r\n" << RAVK;
+            }
+        } else {
+                string  err = "There was a problem.";
+                response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << err.length() << "\r\n\r\n" << err;
+        }
+
+       //printf("RAVK : %s\n\n", sqlite3_column_text( stmt, 1 ));
+
+        
         //delimited by new lines
         //auth_uids+="";
 
-        if (extendSurvey(uid.c_str(), &s) != 1) {
-            string  err = "There was a problem extending the survey to your UID";
-            response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << err.length() << "\r\n\r\n" << err;
-            fprintf(stderr, "UID: %s  !!!! ERROR extending Survey!\n", uid.c_str());
-        }
+        
 
-        printf("Registered User: %s\n\n", uid.c_str());
-        response << "HTTP/1.1 200 OK\r\nContent-Length: " << (unsigned) strlen(RAVK) << "\r\n\r\n" << RAVK;
 
+        
     };
 
 
