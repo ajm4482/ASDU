@@ -11,6 +11,7 @@
 #include <boost/filesystem.hpp>
 #include <array>
 #include <algorithm>
+#include <boost/algorithm/string.hpp>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -160,7 +161,7 @@ int main() {
 
 
     sql = "CREATE TABLE RESPONSES("  \
-         "ID INT PRIMARY KEY NOT NULL," \
+         "TOKEN TEXT NOT NULL," \
          "INCIDENTS INT," \
          "DEVICES INT," \
          "INDUSTRY CHAR(30) NOT NULL);";
@@ -427,6 +428,37 @@ int main() {
             printf(" === SUCCEED ===\n");
         }
 
+        vector<string> strs;
+        boost::split(strs, sr.msg, boost::is_any_of(","));
+        
+
+
+        char *zErrMsg = 0;
+        int  rc;
+
+        sqlite3_stmt * stmt;
+        string sql = "SELECT COUNT(*) from RESPONSES WHERE TOKEN=\'" + string(sr.token) +"\';";
+        sqlite3_prepare_v2( db, sql.c_str(), -1, &stmt, NULL );
+        sqlite3_step(stmt);
+        int exists = sqlite3_column_int(stmt, 0);
+        sqlite3_finalize(stmt);
+
+        cout << "token" << string(sr.token)<<endl;
+
+        if(!exists){       
+           string in = "INSERT INTO RESPONSES(TOKEN, INCIDENTS, DEVICES, INDUSTRY) VALUES(\'"+ string(sr.token) + "\'," + strs[0] + "," + strs[1] + ",\'" + strs[2] + "\');"; 
+           rc = sqlite3_exec(db, in.c_str(), callback, 0, &zErrMsg);
+           if( rc != SQLITE_OK ){
+              fprintf(stderr, "SQL error: %s\n", zErrMsg);
+              sqlite3_free(zErrMsg);
+           }else{
+              fprintf(stdout, "Responses inserted\n");
+           }
+           result = "Submitted";
+        } else{
+            result = "Responded";
+        }
+
         cout << sr.token <<": " << sr.msg << endl;
         freeSurveyResponse(&sr);
 
@@ -437,6 +469,14 @@ int main() {
     server.resource["^/survey$"]["GET"]=[](HttpsServer::Response& response, shared_ptr<HttpsServer::Request> request) {
 
         string json_string = getQuestions();
+
+        response << "HTTP/1.1 200 OK\r\nContent-Length: " << json_string.length() << "\r\n\r\n" << json_string;
+
+    };
+
+    server.resource["^/report"]["GET"]=[](HttpsServer::Response& response, shared_ptr<HttpsServer::Request> request) {
+
+        string json_string;
 
         response << "HTTP/1.1 200 OK\r\nContent-Length: " << json_string.length() << "\r\n\r\n" << json_string;
 
