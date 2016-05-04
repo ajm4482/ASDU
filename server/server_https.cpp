@@ -122,6 +122,7 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName){
    return 0;
 }
 
+
 int main() {
    
    static sqlite3 *db;
@@ -188,9 +189,6 @@ int main() {
    }else{
       fprintf(stdout, "RA Table created successfully\n");
    }
-   
-
-
 
     initAnonize();
     cout<<"initAnonize()"<<endl;
@@ -213,21 +211,18 @@ int main() {
     } else{
 
         /* Execute SQL statement */
-        rc = sqlite3_exec(db, "SELECT RAVK from RA WHERE ID = 1", callback, (void*)RAVK, &zErrMsg);
-        if( rc != SQLITE_OK ){
-          fprintf(stderr, "SQL error: %s\n", zErrMsg);
-          sqlite3_free(zErrMsg);
-        }else{
-          fprintf(stdout, "RAVK retrieved successfully\n");       
-        }
+        sqlite3_stmt * stmt;
+        sqlite3_prepare_v2( db, "SELECT * from RA WHERE ID =1;", -1, &stmt, NULL );
+        sqlite3_step(stmt);
+        strcpy(RAVK, (char *)sqlite3_column_text( stmt, 1 ));
+       //printf("RAVK : %s\n\n", sqlite3_column_text( stmt, 1 ));
 
-        rc = sqlite3_exec(db, "SELECT RASK from RA WHERE ID = 1", callback, (void*)RASK, &zErrMsg);
-        if( rc != SQLITE_OK ){
-          fprintf(stderr, "SQL error: %s\n", zErrMsg);
-          sqlite3_free(zErrMsg);
-        }else{
-          fprintf(stdout, "RASK retrieved successfully\n");       
-        }
+        //printf("RASK : %s\n\n", sqlite3_column_text( stmt, 2 ));
+        strcpy(RASK,(char *)sqlite3_column_text( stmt, 2 ));
+
+        pretty(RAVK,"RAVK");
+        pretty(RASK,"RASK");
+        sqlite3_finalize(stmt);
     }
 
     static string auth_uids = "";
