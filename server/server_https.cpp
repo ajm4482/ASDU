@@ -22,6 +22,8 @@
 #include <sstream>
 #include <iomanip>
 
+#include <sqlite3.h>
+
 extern "C" {
 #include "anon.h"
 }
@@ -112,15 +114,120 @@ string getQuestions(){
     return json_string;
 }
 
+static int callback(void *NotUsed, int argc, char **argv, char **azColName){
+   int i;
+   for(i=0; i<argc; i++){
+      printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+   }
+   return 0;
+}
+
 int main() {
+   
+   static sqlite3 *db;
+   char *zErrMsg = 0;
+   int  rc;
+   char *sql;
+
+   bool init = false;
+
+   /* Open database */
+   rc = sqlite3_open("RA.db", &db);
+   if( rc ){
+      fprintf(stderr, "Can't open database: %s\n", sqlite3_errmsg(db));
+      exit(0);
+   }else{
+      fprintf(stdout, "Opened database successfully\n");
+   }
+
+   /* Create SQL statement */
+   sql = "CREATE TABLE CLIENTS("  \
+         "UID CHAR(30) PRIMARY KEY     NOT NULL," \
+         "REQUESTED INT," \
+         "SIG CHAR(1000)," \
+         "VAVK CHAR(1000)," \
+         "VID CHAR(1000));";
+
+   /* Execute SQL statement */
+   rc = sqlite3_exec(db, sql, callback, 0, &zErrMsg);
+   if( rc != SQLITE_OK ){
+   fprintf(stderr, "SQL error: %s\n", zErrMsg);
+      sqlite3_free(zErrMsg);
+   }else{
+      fprintf(stdout, "CLIENTS Table created successfully\n");
+   }
+
+
+    sql = "CREATE TABLE RESPONSES("  \
+         "ID INT PRIMARY KEY NOT NULL," \
+         "INCIDENTS INT," \
+         "DEVICES INT," \
+         "INDUSTRY CHAR(30) NOT NULL);";
+         
+   /* Execute SQL statement */
+   rc = sqlite3_exec(db, sql, callback, 0, &zErrMsg);
+   if( rc != SQLITE_OK ){
+   fprintf(stderr, "SQL error: %s\n", zErrMsg);
+      sqlite3_free(zErrMsg);
+   }else{
+      fprintf(stdout, " RESPONSE Table created successfully\n");
+   }
+
+   sql = "CREATE TABLE RA("  \
+         "ID INT PRIMARY KEY NOT NULL," \
+         "RAVK CHAR(1000) NOT NULL," \
+         "RASK CHAR(1000) NOT NULL);";
+         
+   /* Execute SQL statement */
+   rc = sqlite3_exec(db, sql, callback, 0, &zErrMsg);
+   if( rc != SQLITE_OK ){
+        fprintf(stderr, "SQL error: %s\n", zErrMsg);
+        if(strcmp(zErrMsg,"table RA already exists "))
+            init = true;
+        sqlite3_free(zErrMsg);
+   }else{
+      fprintf(stdout, "RA Table created successfully\n");
+   }
+   
+
+
 
     initAnonize();
     cout<<"initAnonize()"<<endl;
 
    static char RAVK[2048], RASK[2048];
-    if (!makeKey(RAVK,RASK)) {
-        fprintf(stderr, "!!!! error making keys.");
-        exit(1);
+   if(!init){
+        if (!makeKey(RAVK,RASK)) {
+            fprintf(stderr, "!!!! error making keys.");
+            exit(1);
+        }
+        string in = "INSERT INTO RA (ID,RAVK,RASK) " \
+                    "VALUES (1, \'" + string(RAVK) + "\', \'" + string(RASK) + "\');";
+       rc = sqlite3_exec(db, in.c_str(), callback, 0, &zErrMsg);
+       if( rc != SQLITE_OK ){
+          fprintf(stderr, "SQL error: %s\n", zErrMsg);
+          sqlite3_free(zErrMsg);
+       }else{
+          fprintf(stdout, "KEYS saved successfully\n");
+       }
+    } else{
+
+        /* Execute SQL statement */
+        rc = sqlite3_exec(db, "SELECT RAVK from RA WHERE ID = 1", callback, (void*)RAVK, &zErrMsg);
+        if( rc != SQLITE_OK ){
+          fprintf(stderr, "SQL error: %s\n", zErrMsg);
+          sqlite3_free(zErrMsg);
+        }else{
+          fprintf(stdout, "RAVK retrieved successfully\n");       
+        }
+
+        rc = sqlite3_exec(db, "SELECT RASK from RA WHERE ID = 1", callback, (void*)RASK, &zErrMsg);
+        if( rc != SQLITE_OK ){
+          fprintf(stderr, "SQL error: %s\n", zErrMsg);
+          sqlite3_free(zErrMsg);
+        }else{
+          fprintf(stdout, "RASK retrieved successfully\n");       
+        }
     }
 
     static string auth_uids = "";
@@ -377,6 +484,6 @@ int main() {
     // // cout << r3->content.rdbuf() << endl;
     
     server_thread.join();
-    
+    sqlite3_close(db);
     return 0;
 }
