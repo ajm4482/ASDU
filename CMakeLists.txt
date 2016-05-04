@@ -26,6 +26,15 @@ find_package(Threads REQUIRED)
 find_package(Boost 1.54.0 COMPONENTS regex system thread coroutine context filesystem date_time REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 
+find_path(SQLITE3_INCLUDE_DIR sqlite3.h)
+find_library(SQLITE3_LIBRARY sqlite3)
+if(NOT SQLITE3_INCLUDE_DIR)
+  message(SEND_ERROR "Failed to find sqlite3.h")
+endif()
+if(NOT SQLITE3_LIBRARY)
+  message(SEND_ERROR "Failed to find the sqlite3 library")
+endif()
+
 if(APPLE)
     set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl")
 endif()
@@ -46,6 +55,8 @@ if(OPENSSL_FOUND)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lc++ -fomit-frame-pointer -DNDEBUG -msse2 -mfpmath=sse -march=native")
 
     add_executable(server_https server/server_https.cpp)
+    target_link_libraries(server_https
+    ${SQLITE3_LIBRARY})
     target_link_libraries(server_https ${Boost_LIBRARIES})
     target_link_libraries(server_https ${OPENSSL_LIBRARIES})
     target_link_libraries(server_https ${CMAKE_THREAD_LIBS_INIT})
@@ -58,6 +69,8 @@ if(OPENSSL_FOUND)
     target_link_libraries(client_https ${CMAKE_THREAD_LIBS_INIT})
     target_link_libraries(client_https anon)
     target_link_libraries(client_https relic_s)
+
+
 
 
 endif()
