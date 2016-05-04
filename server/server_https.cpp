@@ -22,6 +22,8 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <vector>
+#include <cmath>
 
 #include <sqlite3.h>
 
@@ -124,6 +126,7 @@ static int callback(void *NotUsed, int argc, char **argv, char **azColName){
 }
 
 
+
 int main() {
    
    static sqlite3 *db;
@@ -133,6 +136,10 @@ int main() {
 
    bool init = false;
    bool vinit = false;
+
+   static vector<string> industries;
+   static vector<int> incidents;
+   static vector<int> devices;
 
    /* Open database */
    rc = sqlite3_open("RA.db", &db);
@@ -209,6 +216,19 @@ int main() {
       fprintf(stdout, "VA Table created successfully\n");
    }
 
+
+    sqlite3_stmt * stmt;
+    sqlite3_prepare_v2( db, "SELECT INCIDENTS,DEVICES,INDUSTRY from RESPONSES;", -1, &stmt, NULL );
+    rc = sqlite3_step(stmt);
+    while(rc == SQLITE_ROW){
+        incidents.push_back(sqlite3_column_int(stmt, 0));
+        devices.push_back(sqlite3_column_int(stmt,1));
+        industries.push_back(string((char*)sqlite3_column_text(stmt,2)));
+        rc = sqlite3_step(stmt);
+    }
+    sqlite3_finalize(stmt);
+
+    cout << "finished loading" << endl;
 
 
     initAnonize();
@@ -443,8 +463,6 @@ int main() {
         int exists = sqlite3_column_int(stmt, 0);
         sqlite3_finalize(stmt);
 
-        cout << "token" << string(sr.token)<<endl;
-
         if(!exists){       
            string in = "INSERT INTO RESPONSES(TOKEN, INCIDENTS, DEVICES, INDUSTRY) VALUES(\'"+ string(sr.token) + "\'," + strs[0] + "," + strs[1] + ",\'" + strs[2] + "\');"; 
            rc = sqlite3_exec(db, in.c_str(), callback, 0, &zErrMsg);
@@ -455,6 +473,10 @@ int main() {
               fprintf(stdout, "Responses inserted\n");
            }
            result = "Submitted";
+
+        incidents.push_back(atoi(strs[0].c_str()));
+        devices.push_back(atoi(strs[1].c_str()));
+        industries.push_back(strs[2]);
         } else{
             result = "Responded";
         }
@@ -477,6 +499,33 @@ int main() {
     server.resource["^/report"]["GET"]=[](HttpsServer::Response& response, shared_ptr<HttpsServer::Request> request) {
 
         string json_string;
+
+        double avg=0;
+        cout << incidents.size()<<endl;
+        cout << devices.size() << endl;
+        for(int i = 0; i < incidents.size(); i++){
+            avg+=(incidents[i]/devices[i]);
+        }
+        cout << "here2";
+
+        avg/=incidents.size();
+
+        double sum = 0;
+        for(int i = 0; i < incidents.size(); i++){
+            sum+=(((incidents[i]/devices[i])-avg) * ((incidents[i]/devices[i])-avg));
+        }
+
+        cout << sum<<endl;
+        double std;
+        if(sum > 0)
+            std = sqrt(sum/incidents.size());
+        else
+            std = 0;
+
+        cout << avg << endl;
+        cout << std << endl;
+
+        json_string="{\"avg\": \"" + to_string(avg) + "\",\"std\": \"" + to_string(std) +"\"}";
 
         response << "HTTP/1.1 200 OK\r\nContent-Length: " << json_string.length() << "\r\n\r\n" << json_string;
 
